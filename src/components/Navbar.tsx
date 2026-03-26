@@ -16,7 +16,7 @@ export default function Navbar() {
 
       {/* Desktop nav */}
       <div className="hidden md:flex items-center gap-8">
-        {["ABOUT", "REVIEWS", "BOOKING"].map((link) => (
+        {["ABOUT", "BOOKING"].map((link) => (
           <a
             key={link}
             href={`#${link.toLowerCase()}`}
@@ -58,7 +58,7 @@ export default function Navbar() {
             : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        {["ABOUT", "REVIEWS", "BOOKING", "CONTACT"].map((link) => (
+        {["ABOUT", "BOOKING", "CONTACT"].map((link) => (
           <a
             key={link}
             href={`#${link.toLowerCase()}`}

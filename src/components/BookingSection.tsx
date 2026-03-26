@@ -213,7 +213,7 @@ export default function BookingSection() {
             BOOK YOUR SESSION
           </h2>
           <p className="font-[family-name:var(--font-body)] text-sm md:text-base text-secondary">
-            Daily sessions available 7 days a week
+            Monday &ndash; Friday, 5:00 &ndash; 7:00 PM
           </p>
         </div>
         <div className="flex flex-col md:flex-row gap-8 md:gap-12">

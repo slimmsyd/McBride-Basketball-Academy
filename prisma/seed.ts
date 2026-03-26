@@ -53,7 +53,7 @@ async function main() {
       grade: "All Ages",
       defaultTime: "By Appointment",
       durationMinutes: 60,
-      price: 75,
+      price: 50,
       capacity: 1,
       color: "#FA541C",
       active: true,
@@ -77,6 +77,10 @@ async function main() {
     const date = new Date(today);
     date.setDate(date.getDate() + i);
 
+    // Skip weekends — training is Monday-Friday only
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
     for (const st of sessionTypes) {
       await prisma.scheduledSession.create({
         data: {
@@ -92,39 +96,7 @@ async function main() {
   }
   console.log(`Created ${sessionCount} scheduled sessions (30 days × 3 types)`);
 
-  // Reviews
-  await prisma.review.createMany({
-    data: [
-      {
-        stars: 5,
-        quote:
-          "Isaac transformed my son's game completely. His fundamentals improved dramatically in just 2 months. The best investment we've made in his basketball development.",
-        reviewerName: "Sarah Johnson",
-        reviewerRole: "Parent of 8th Grader",
-        visible: true,
-        sortOrder: 1,
-      },
-      {
-        stars: 5,
-        quote:
-          "Coach McBride pushes you to be better every single day. He doesn't just teach basketball — he teaches discipline, work ethic, and how to compete. I've gotten so much better since training with him.",
-        reviewerName: "Marcus Williams",
-        reviewerRole: "High School Junior",
-        visible: true,
-        sortOrder: 2,
-      },
-      {
-        stars: 5,
-        quote:
-          "We drive 45 minutes each way for Isaac's sessions and it's worth every mile. My daughter's confidence on the court has skyrocketed. He has a gift for connecting with young athletes.",
-        reviewerName: "David Chen",
-        reviewerRole: "Parent of 6th Grader",
-        visible: true,
-        sortOrder: 3,
-      },
-    ],
-  });
-  console.log("Created 3 reviews");
+  // No reviews yet — will be added when real testimonials come in
 
   // Site Settings
   await prisma.siteSetting.createMany({
@@ -133,11 +105,10 @@ async function main() {
       { key: "default_capacity", value: "10" },
       { key: "cancellation_policy", value: "Full refund up to 24 hours before session." },
       { key: "business_name", value: "McBride Basketball Academy" },
-      { key: "business_email", value: "isaac@mcbridetraining.com" },
-      { key: "business_phone", value: "(555) 123-4567" },
+      { key: "business_email", value: "Issac5.McBride@gmail.com" },
     ],
   });
-  console.log("Created 6 site settings");
+  console.log("Created 5 site settings");
 
   console.log("Seed complete!");
 }
