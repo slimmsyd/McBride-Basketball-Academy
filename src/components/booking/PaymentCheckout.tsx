@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import type { BookingData } from "@/app/booking/page";
+import { createPaymentIntent, checkStripeConfigured } from "@/lib/actions";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 export default function PaymentCheckout({
   booking,
@@ -15,16 +22,41 @@ export default function PaymentCheckout({
   onBack,
 }: {
   booking: BookingData;
-  onPay: () => void;
+  onPay: (stripePaymentId?: string) => void;
   submitting?: boolean;
   onBack: () => void;
 }) {
-  const [agreed, setAgreed] = useState(false);
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvc, setCvc] = useState("");
+  const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const canPay = agreed && cardNumber.length >= 16 && expiry.length >= 4 && cvc.length >= 3;
+  useEffect(() => {
+    async function init() {
+      const configured = await checkStripeConfigured();
+      setStripeEnabled(configured);
+
+      if (configured && booking.session) {
+        const { clientSecret: cs } = await createPaymentIntent(
+          booking.session.price,
+          {
+            sessionId: booking.session.id,
+            playerName: `${booking.player?.firstName} ${booking.player?.lastName}`,
+          }
+        );
+        setClientSecret(cs);
+      }
+      setLoading(false);
+    }
+    init();
+  }, [booking.session, booking.player]);
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-12 flex items-center justify-center h-64">
+        <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12 md:py-16">
@@ -58,7 +90,7 @@ export default function PaymentCheckout({
             <h1 className="font-[family-name:var(--font-headline)] text-2xl md:text-3xl font-extrabold text-primary mt-2">COMPLETE BOOKING</h1>
           </div>
 
-          {/* Order summary */}
+          {/* Order summary inline */}
           <div className="bg-surface rounded-xl p-5 flex flex-col gap-3">
             <div className="flex justify-between">
               <span className="font-[family-name:var(--font-body)] text-sm font-semibold text-primary">{booking.session?.name}</span>
@@ -69,84 +101,13 @@ export default function PaymentCheckout({
             </span>
           </div>
 
-          {/* Card fields */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-[family-name:var(--font-body)] text-[13px] font-semibold text-secondary">Card Information</label>
-            <div className="flex items-center bg-surface rounded-lg border border-border h-11 px-3.5">
-              <input
-                type="text"
-                placeholder="1234 5678 9012 3456"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 16))}
-                className="flex-1 bg-transparent text-sm font-[family-name:var(--font-mono)] text-primary placeholder:text-muted outline-none"
-              />
-              <div className="flex gap-1.5">
-                <div className="w-8 h-5 bg-[#1A1F71] rounded text-[7px] font-bold text-white flex items-center justify-center font-[family-name:var(--font-headline)]">VISA</div>
-                <div className="w-8 h-5 bg-[#EB001B] rounded text-[8px] font-bold text-white flex items-center justify-center font-[family-name:var(--font-headline)]">MC</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="MM / YY"
-                value={expiry}
-                onChange={(e) => setExpiry(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                className="w-full h-11 px-3.5 bg-surface rounded-lg border border-border text-sm font-[family-name:var(--font-mono)] text-primary placeholder:text-muted outline-none focus:border-accent transition-colors"
-              />
-            </div>
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="CVC"
-                value={cvc}
-                onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                className="w-full h-11 px-3.5 bg-surface rounded-lg border border-border text-sm font-[family-name:var(--font-mono)] text-primary placeholder:text-muted outline-none focus:border-accent transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* Terms */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div
-              onClick={() => setAgreed(!agreed)}
-              className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${
-                agreed ? "bg-accent border-accent" : "bg-white border-border"
-              }`}
-            >
-              {agreed && (
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-                  <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </div>
-            <span className="font-[family-name:var(--font-body)] text-[13px] text-secondary">
-              I agree to the cancellation policy and terms of service
-            </span>
-          </label>
-
-          {/* Pay button */}
-          <button
-            disabled={!canPay || submitting}
-            onClick={() => canPay && !submitting && onPay()}
-            className={`w-full h-[52px] rounded-lg font-[family-name:var(--font-headline)] text-lg font-bold tracking-wide flex items-center justify-center gap-2 transition-colors ${
-              canPay && !submitting ? "bg-accent text-white hover:bg-accent/90" : "bg-elevated text-muted"
-            }`}
-          >
-            {submitting ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                PAY ${booking.session?.price}.00
-              </>
-            )}
-          </button>
+          {stripeEnabled && clientSecret && stripePromise ? (
+            <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
+              <StripePaymentForm onPay={onPay} submitting={submitting} price={booking.session?.price ?? 0} />
+            </Elements>
+          ) : (
+            <MockPaymentForm onPay={() => onPay()} submitting={submitting} price={booking.session?.price ?? 0} />
+          )}
 
           {/* Security note */}
           <div className="flex items-center justify-center gap-1.5">
@@ -154,7 +115,7 @@ export default function PaymentCheckout({
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
             <span className="font-[family-name:var(--font-body)] text-xs text-muted">
-              Secured by Stripe. Your payment info is encrypted.
+              {stripeEnabled ? "Secured by Stripe. Your payment info is encrypted." : "Payment processing coming soon. Booking will be confirmed."}
             </span>
           </div>
         </div>
@@ -179,6 +140,195 @@ export default function PaymentCheckout({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function StripePaymentForm({
+  onPay,
+  submitting,
+  price,
+}: {
+  onPay: (stripePaymentId?: string) => void;
+  submitting?: boolean;
+  price: number;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [agreed, setAgreed] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!stripe || !elements || !agreed) return;
+    setProcessing(true);
+    setError(null);
+
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      setError(submitError.message ?? "Payment failed");
+      setProcessing(false);
+      return;
+    }
+
+    const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: window.location.href },
+      redirect: "if_required",
+    });
+
+    if (confirmError) {
+      setError(confirmError.message ?? "Payment failed");
+      setProcessing(false);
+    } else if (paymentIntent?.status === "succeeded") {
+      onPay(paymentIntent.id);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <PaymentElement />
+
+      {error && (
+        <p className="font-[family-name:var(--font-body)] text-sm text-[#FA541C]">{error}</p>
+      )}
+
+      <label className="flex items-center gap-3 cursor-pointer">
+        <div
+          onClick={() => setAgreed(!agreed)}
+          className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${
+            agreed ? "bg-accent border-accent" : "bg-white border-border"
+          }`}
+        >
+          {agreed && (
+            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </div>
+        <span className="font-[family-name:var(--font-body)] text-[13px] text-secondary">
+          I agree to the cancellation policy and terms of service
+        </span>
+      </label>
+
+      <button
+        disabled={!agreed || processing || submitting || !stripe}
+        onClick={handleSubmit}
+        className={`w-full h-[52px] rounded-lg font-[family-name:var(--font-headline)] text-lg font-bold tracking-wide flex items-center justify-center gap-2 transition-colors ${
+          agreed && !processing && !submitting ? "bg-accent text-white hover:bg-accent/90" : "bg-elevated text-muted"
+        }`}
+      >
+        {processing || submitting ? (
+          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <>
+            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            PAY ${price}.00
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
+function MockPaymentForm({
+  onPay,
+  submitting,
+  price,
+}: {
+  onPay: () => void;
+  submitting?: boolean;
+  price: number;
+}) {
+  const [agreed, setAgreed] = useState(false);
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvc, setCvc] = useState("");
+
+  const canPay = agreed && cardNumber.length >= 16 && expiry.length >= 4 && cvc.length >= 3;
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Card fields */}
+      <div className="flex flex-col gap-1.5">
+        <label className="font-[family-name:var(--font-body)] text-[13px] font-semibold text-secondary">Card Information</label>
+        <div className="flex items-center bg-surface rounded-lg border border-border h-11 px-3.5">
+          <input
+            type="text"
+            placeholder="1234 5678 9012 3456"
+            value={cardNumber}
+            onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 16))}
+            className="flex-1 bg-transparent text-sm font-[family-name:var(--font-mono)] text-primary placeholder:text-muted outline-none"
+          />
+          <div className="flex gap-1.5">
+            <div className="w-8 h-5 bg-[#1A1F71] rounded text-[7px] font-bold text-white flex items-center justify-center font-[family-name:var(--font-headline)]">VISA</div>
+            <div className="w-8 h-5 bg-[#EB001B] rounded text-[8px] font-bold text-white flex items-center justify-center font-[family-name:var(--font-headline)]">MC</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="MM / YY"
+            value={expiry}
+            onChange={(e) => setExpiry(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            className="w-full h-11 px-3.5 bg-surface rounded-lg border border-border text-sm font-[family-name:var(--font-mono)] text-primary placeholder:text-muted outline-none focus:border-accent transition-colors"
+          />
+        </div>
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="CVC"
+            value={cvc}
+            onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            className="w-full h-11 px-3.5 bg-surface rounded-lg border border-border text-sm font-[family-name:var(--font-mono)] text-primary placeholder:text-muted outline-none focus:border-accent transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Terms */}
+      <label className="flex items-center gap-3 cursor-pointer">
+        <div
+          onClick={() => setAgreed(!agreed)}
+          className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${
+            agreed ? "bg-accent border-accent" : "bg-white border-border"
+          }`}
+        >
+          {agreed && (
+            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </div>
+        <span className="font-[family-name:var(--font-body)] text-[13px] text-secondary">
+          I agree to the cancellation policy and terms of service
+        </span>
+      </label>
+
+      <button
+        disabled={!canPay || submitting}
+        onClick={() => canPay && !submitting && onPay()}
+        className={`w-full h-[52px] rounded-lg font-[family-name:var(--font-headline)] text-lg font-bold tracking-wide flex items-center justify-center gap-2 transition-colors ${
+          canPay && !submitting ? "bg-accent text-white hover:bg-accent/90" : "bg-elevated text-muted"
+        }`}
+      >
+        {submitting ? (
+          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <>
+            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            PAY ${price}.00
+          </>
+        )}
+      </button>
     </div>
   );
 }

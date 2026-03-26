@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "./prisma";
+import { stripe, isStripeConfigured } from "./stripe";
 
 // ─── READ ───────────────────────────────────────────
 
@@ -129,6 +130,90 @@ export async function joinWaitlist(data: {
   playerName: string;
 }) {
   return prisma.waitlist.create({ data });
+}
+
+// ─── STRIPE ────────────────────────────────────────
+
+export async function checkStripeConfigured() {
+  return isStripeConfigured();
+}
+
+export async function createPaymentIntent(amount: number, metadata: Record<string, string>) {
+  if (!stripe) throw new Error("Stripe is not configured");
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(amount * 100), // cents
+    currency: "usd",
+    metadata,
+  });
+
+  return { clientSecret: paymentIntent.client_secret! };
+}
+
+export async function createBookingWithPayment(data: {
+  scheduledSessionId: string;
+  playerFirstName: string;
+  playerLastName: string;
+  playerGrade: string;
+  playerAge?: number;
+  parentName: string;
+  parentEmail: string;
+  parentPhone: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  medicalNotes?: string;
+  paymentAmount: number;
+  stripePaymentId: string;
+}) {
+  const session = await prisma.scheduledSession.findUnique({
+    where: { id: data.scheduledSessionId },
+    include: {
+      _count: { select: { bookings: { where: { status: "confirmed" } } } },
+    },
+  });
+
+  if (!session) throw new Error("Session not found");
+  if (session._count.bookings >= session.capacity) {
+    throw new Error("Session is full");
+  }
+
+  const confirmationNumber = generateConfNumber(session.date);
+
+  const booking = await prisma.booking.create({
+    data: {
+      scheduledSessionId: data.scheduledSessionId,
+      confirmationNumber,
+      playerFirstName: data.playerFirstName,
+      playerLastName: data.playerLastName,
+      playerGrade: data.playerGrade,
+      playerAge: data.playerAge,
+      parentName: data.parentName,
+      parentEmail: data.parentEmail,
+      parentPhone: data.parentPhone,
+      emergencyContact: data.emergencyContact,
+      emergencyPhone: data.emergencyPhone,
+      medicalNotes: data.medicalNotes,
+      paymentAmount: data.paymentAmount,
+      paymentStatus: "paid",
+      stripePaymentId: data.stripePaymentId,
+      status: "confirmed",
+    },
+    include: {
+      scheduledSession: { include: { sessionType: true } },
+    },
+  });
+
+  return {
+    id: booking.id,
+    confirmationNumber: booking.confirmationNumber,
+    playerFirstName: booking.playerFirstName,
+    playerLastName: booking.playerLastName,
+    sessionName: booking.scheduledSession.sessionType.name,
+    sessionTime: booking.scheduledSession.sessionType.defaultTime,
+    date: booking.scheduledSession.date.toISOString(),
+    parentEmail: booking.parentEmail,
+    paymentAmount: Number(booking.paymentAmount),
+  };
 }
 
 // ─── HELPERS ────────────────────────────────────────

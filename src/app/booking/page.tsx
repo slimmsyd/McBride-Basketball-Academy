@@ -5,7 +5,7 @@ import SessionSelection from "@/components/booking/SessionSelection";
 import PlayerInfoForm from "@/components/booking/PlayerInfoForm";
 import PaymentCheckout from "@/components/booking/PaymentCheckout";
 import BookingConfirmation from "@/components/booking/BookingConfirmation";
-import { createBooking } from "@/lib/actions";
+import { createBooking, createBookingWithPayment } from "@/lib/actions";
 
 export interface BookingData {
   date: Date;
@@ -43,11 +43,11 @@ export default function BookingPage() {
   const [booking, setBooking] = useState<BookingData>(INITIAL_BOOKING);
   const [submitting, setSubmitting] = useState(false);
 
-  const handlePay = async () => {
+  const handlePay = async (stripePaymentId?: string) => {
     if (!booking.session || !booking.player) return;
     setSubmitting(true);
     try {
-      const result = await createBooking({
+      const bookingData = {
         scheduledSessionId: booking.session.id,
         playerFirstName: booking.player.firstName,
         playerLastName: booking.player.lastName,
@@ -60,7 +60,12 @@ export default function BookingPage() {
         emergencyPhone: booking.player.emergencyPhone || undefined,
         medicalNotes: booking.player.medicalNotes || undefined,
         paymentAmount: booking.session.price,
-      });
+      };
+
+      const result = stripePaymentId
+        ? await createBookingWithPayment({ ...bookingData, stripePaymentId })
+        : await createBooking(bookingData);
+
       setBooking({
         ...booking,
         confirmationNumber: result.confirmationNumber,
