@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Plus, X, Calendar, Check } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -9,7 +9,7 @@ import {
   updateSessionType,
   toggleSessionTypeActive,
 } from "@/lib/admin-actions";
-import { checkCalendarConnected } from "@/lib/actions";
+import { checkCalendarConnected, getCalendarEmail, disconnectCalendar } from "@/lib/actions";
 
 type SessionType = {
   id: string;
@@ -34,22 +34,47 @@ const EMPTY_FORM = {
 };
 
 export default function AdminProgramsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="w-6 h-6 border-2 border-[#2979FF] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <AdminProgramsContent />
+    </Suspense>
+  );
+}
+
+function AdminProgramsContent() {
   const [types, setTypes] = useState<SessionType[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarEmail, setCalendarEmail] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
   const searchParams = useSearchParams();
 
   const load = async () => {
-    const [data, connected] = await Promise.all([
+    const [data, connected, email] = await Promise.all([
       getAllSessionTypes(),
       checkCalendarConnected(),
+      getCalendarEmail(),
     ]);
     setTypes(data.map((t) => ({ ...t, price: Number(t.price) })));
     setCalendarConnected(connected);
+    setCalendarEmail(email);
     setLoading(false);
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm("Disconnect Google account? Bookings will no longer sync to calendar or send emails.")) return;
+    setDisconnecting(true);
+    await disconnectCalendar();
+    setCalendarConnected(false);
+    setCalendarEmail(null);
+    setDisconnecting(false);
   };
 
   useEffect(() => { load(); }, []);
@@ -130,25 +155,34 @@ export default function AdminProgramsPage() {
           <Calendar size={20} className={calendarConnected ? "text-[#22C55E]" : "text-[#A1A1AA]"} />
           <div>
             <span className="font-[family-name:var(--font-body)] text-sm font-semibold text-[#18181B]">
-              Google Calendar
+              Google Calendar & Email
             </span>
             <span className="font-[family-name:var(--font-body)] text-xs text-[#52525B] block">
               {calendarConnected
-                ? "Connected — bookings auto-sync to Issac's calendar"
-                : "Connect to auto-add bookings to Issac's calendar"}
+                ? <>Connected as <span className="font-semibold text-[#18181B]">{calendarEmail}</span> — bookings auto-sync &amp; emails send from this account</>
+                : "Connect to auto-sync bookings to calendar and send confirmation emails"}
             </span>
           </div>
         </div>
         {calendarConnected ? (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-[#22C55E] bg-[#22C55E]/10 px-3 py-1 rounded-full font-[family-name:var(--font-body)]">
-            <Check size={14} /> Connected
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[#22C55E] bg-[#22C55E]/10 px-3 py-1 rounded-full font-[family-name:var(--font-body)]">
+              <Check size={14} /> Connected
+            </span>
+            <button
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="font-[family-name:var(--font-body)] text-xs font-medium text-[#EF4444] hover:underline disabled:opacity-50"
+            >
+              {disconnecting ? "Disconnecting..." : "Disconnect"}
+            </button>
+          </div>
         ) : (
           <a
             href="/api/auth/google"
             className="flex items-center gap-1.5 h-9 px-4 rounded-lg bg-[#2979FF] text-white font-[family-name:var(--font-body)] text-sm font-semibold hover:bg-[#2979FF]/90 transition-colors"
           >
-            Connect Calendar
+            Connect Google
           </a>
         )}
       </div>
