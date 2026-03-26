@@ -7,7 +7,11 @@ const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_REDIRECT_URI
 );
 
-const SCOPES = ["https://www.googleapis.com/auth/calendar"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/gmail.send",
+  "https://www.googleapis.com/auth/userinfo.email",
+];
 
 /** Generate the URL Issac clicks to authorize his Google Calendar */
 export function getAuthUrl(): string {
@@ -23,11 +27,22 @@ export async function handleCallback(code: string) {
   const { tokens } = await oauth2Client.getToken(code);
 
   if (tokens.refresh_token) {
-    // Store refresh token in SiteSettings
     await prisma.siteSetting.upsert({
       where: { key: "google_refresh_token" },
       update: { value: tokens.refresh_token },
       create: { key: "google_refresh_token", value: tokens.refresh_token },
+    });
+  }
+
+  // Fetch and store the connected account's email
+  oauth2Client.setCredentials(tokens);
+  const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+  const { data } = await oauth2.userinfo.get();
+  if (data.email) {
+    await prisma.siteSetting.upsert({
+      where: { key: "google_connected_email" },
+      update: { value: data.email },
+      create: { key: "google_connected_email", value: data.email },
     });
   }
 
@@ -55,6 +70,21 @@ export async function isCalendarConnected(): Promise<boolean> {
     where: { key: "google_refresh_token" },
   });
   return !!setting?.value;
+}
+
+/** Get the connected Google account email */
+export async function getConnectedEmail(): Promise<string | null> {
+  const setting = await prisma.siteSetting.findUnique({
+    where: { key: "google_connected_email" },
+  });
+  return setting?.value ?? null;
+}
+
+/** Disconnect Google account by removing stored tokens and email */
+export async function disconnectGoogle() {
+  await prisma.siteSetting.deleteMany({
+    where: { key: { in: ["google_refresh_token", "google_connected_email"] } },
+  });
 }
 
 /** Create a Google Calendar event when a booking is made */

@@ -2,7 +2,9 @@
 
 import { prisma } from "./prisma";
 import { stripe, isStripeConfigured } from "./stripe";
-import { createCalendarEvent, isCalendarConnected } from "./google-calendar";
+import { createCalendarEvent, isCalendarConnected, getConnectedEmail, disconnectGoogle } from "./google-calendar";
+import { sendBookingConfirmationEmails } from "./gmail";
+import { revalidatePath } from "next/cache";
 
 // ─── READ ───────────────────────────────────────────
 
@@ -14,8 +16,8 @@ export async function getSessionTypes() {
 }
 
 export async function getSessionsForDate(dateStr: string) {
-  const date = new Date(dateStr);
-  date.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr);
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
 
   // Auto-create sessions if none exist for this date
   await ensureSessionsForDate(date);
@@ -126,6 +128,27 @@ export async function createBooking(data: {
   } catch (e) {
     console.error("Failed to create calendar event:", e);
   }
+
+  // Send confirmation emails (non-blocking)
+  try {
+    await sendBookingConfirmationEmails({
+      confirmationNumber: booking.confirmationNumber,
+      playerFirstName: booking.playerFirstName,
+      playerLastName: booking.playerLastName,
+      parentName: booking.parentName,
+      parentEmail: booking.parentEmail,
+      parentPhone: booking.parentPhone,
+      sessionName: booking.scheduledSession.sessionType.name,
+      sessionTime: booking.scheduledSession.sessionType.defaultTime,
+      date: booking.scheduledSession.date.toISOString(),
+      paymentAmount: Number(booking.paymentAmount),
+    });
+  } catch (e) {
+    console.error("Failed to send confirmation emails:", e);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/booking");
 
   return {
     id: booking.id,
@@ -238,6 +261,27 @@ export async function createBookingWithPayment(data: {
     console.error("Failed to create calendar event:", e);
   }
 
+  // Send confirmation emails (non-blocking)
+  try {
+    await sendBookingConfirmationEmails({
+      confirmationNumber: booking.confirmationNumber,
+      playerFirstName: booking.playerFirstName,
+      playerLastName: booking.playerLastName,
+      parentName: booking.parentName,
+      parentEmail: booking.parentEmail,
+      parentPhone: booking.parentPhone,
+      sessionName: booking.scheduledSession.sessionType.name,
+      sessionTime: booking.scheduledSession.sessionType.defaultTime,
+      date: booking.scheduledSession.date.toISOString(),
+      paymentAmount: Number(booking.paymentAmount),
+    });
+  } catch (e) {
+    console.error("Failed to send confirmation emails:", e);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/booking");
+
   return {
     id: booking.id,
     confirmationNumber: booking.confirmationNumber,
@@ -257,12 +301,21 @@ export async function checkCalendarConnected() {
   return isCalendarConnected();
 }
 
+export async function getCalendarEmail() {
+  return getConnectedEmail();
+}
+
+export async function disconnectCalendar() {
+  await disconnectGoogle();
+  revalidatePath("/admin");
+}
+
 // ─── HELPERS ────────────────────────────────────────
 
 function generateConfNumber(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
   const rand = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
   return `IMB-${y}-${m}${d}-${rand}`;
 }

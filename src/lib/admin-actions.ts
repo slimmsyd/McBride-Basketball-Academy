@@ -49,12 +49,12 @@ export async function toggleSessionTypeActive(id: string) {
 // ─── SCHEDULE ─────────────────────────────────────
 
 export async function getWeekSessions(mondayISO: string) {
-  const monday = new Date(mondayISO);
-  monday.setHours(0, 0, 0, 0);
+  const m = new Date(mondayISO);
+  const monday = new Date(Date.UTC(m.getFullYear(), m.getMonth(), m.getDate()));
 
   const friday = new Date(monday);
-  friday.setDate(friday.getDate() + 4);
-  friday.setHours(23, 59, 59, 999);
+  friday.setUTCDate(friday.getUTCDate() + 4);
+  friday.setUTCHours(23, 59, 59, 999);
 
   const sessions = await prisma.scheduledSession.findMany({
     where: {

@@ -8,14 +8,16 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-function Input({ label, placeholder, value, onChange, type = "text" }: {
-  label: string; placeholder: string; value: string; onChange: (v: string) => void; type?: string;
+function Input({ label, placeholder, value, onChange, type = "text", name, autoComplete }: {
+  label: string; placeholder: string; value: string; onChange: (v: string) => void; type?: string; name?: string; autoComplete?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="font-[family-name:var(--font-body)] text-[13px] font-semibold text-secondary">{label}</label>
       <input
         type={type}
+        name={name}
+        autoComplete={autoComplete}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -76,8 +78,8 @@ export default function PlayerInfoForm({
           </div>
 
           <div className="flex gap-4">
-            <div className="flex-1"><Input label="Player First Name" placeholder="First name" value={form.firstName} onChange={(v) => update("firstName", v)} /></div>
-            <div className="flex-1"><Input label="Player Last Name" placeholder="Last name" value={form.lastName} onChange={(v) => update("lastName", v)} /></div>
+            <div className="flex-1"><Input label="Player First Name" placeholder="First name" value={form.firstName} onChange={(v) => update("firstName", v)} name="playerFirstName" autoComplete="given-name" /></div>
+            <div className="flex-1"><Input label="Player Last Name" placeholder="Last name" value={form.lastName} onChange={(v) => update("lastName", v)} name="playerLastName" autoComplete="family-name" /></div>
           </div>
 
           <div className="flex gap-4">
@@ -96,23 +98,23 @@ export default function PlayerInfoForm({
                 </select>
               </div>
             </div>
-            <div className="flex-1"><Input label="Age" placeholder="Age" value={form.age} onChange={(v) => update("age", v)} /></div>
+            <div className="flex-1"><Input label="Age" placeholder="Age" value={form.age} onChange={(v) => update("age", v)} name="playerAge" /></div>
           </div>
 
           <div className="h-px bg-border" />
 
           <span className="font-[family-name:var(--font-mono)] text-xs font-medium text-accent tracking-[3px]">PARENT / GUARDIAN</span>
 
-          <Input label="Parent/Guardian Name" placeholder="Full name" value={form.parentName} onChange={(v) => update("parentName", v)} />
+          <Input label="Parent/Guardian Name" placeholder="Full name" value={form.parentName} onChange={(v) => update("parentName", v)} name="parentName" autoComplete="name" />
 
           <div className="flex gap-4">
-            <div className="flex-1"><Input label="Email" placeholder="parent@email.com" value={form.parentEmail} onChange={(v) => update("parentEmail", v)} type="email" /></div>
-            <div className="flex-1"><Input label="Phone" placeholder="(555) 000-0000" value={form.parentPhone} onChange={(v) => update("parentPhone", v)} type="tel" /></div>
+            <div className="flex-1"><Input label="Email" placeholder="parent@email.com" value={form.parentEmail} onChange={(v) => update("parentEmail", v)} type="email" name="parentEmail" autoComplete="email" /></div>
+            <div className="flex-1"><Input label="Phone" placeholder="(555) 000-0000" value={form.parentPhone} onChange={(v) => update("parentPhone", v)} type="tel" name="parentPhone" autoComplete="tel" /></div>
           </div>
 
           <div className="flex gap-4">
-            <div className="flex-1"><Input label="Emergency Contact" placeholder="Name" value={form.emergencyContact} onChange={(v) => update("emergencyContact", v)} /></div>
-            <div className="flex-1"><Input label="Emergency Phone" placeholder="(555) 000-0000" value={form.emergencyPhone} onChange={(v) => update("emergencyPhone", v)} type="tel" /></div>
+            <div className="flex-1"><Input label="Emergency Contact" placeholder="Name" value={form.emergencyContact} onChange={(v) => update("emergencyContact", v)} name="emergencyContact" /></div>
+            <div className="flex-1"><Input label="Emergency Phone" placeholder="(555) 000-0000" value={form.emergencyPhone} onChange={(v) => update("emergencyPhone", v)} type="tel" name="emergencyPhone" autoComplete="tel" /></div>
           </div>
 
           <div className="flex flex-col gap-1.5">

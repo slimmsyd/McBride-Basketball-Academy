@@ -106,7 +106,7 @@ export default function PaymentCheckout({
               <StripePaymentForm onPay={onPay} submitting={submitting} price={booking.session?.price ?? 0} />
             </Elements>
           ) : (
-            <MockPaymentForm onPay={() => onPay()} submitting={submitting} price={booking.session?.price ?? 0} />
+            <TestBookingForm onPay={() => onPay()} submitting={submitting} price={booking.session?.price ?? 0} />
           )}
 
           {/* Security note */}
@@ -234,7 +234,7 @@ function StripePaymentForm({
   );
 }
 
-function MockPaymentForm({
+function TestBookingForm({
   onPay,
   submitting,
   price,
@@ -243,78 +243,19 @@ function MockPaymentForm({
   submitting?: boolean;
   price: number;
 }) {
-  const [agreed, setAgreed] = useState(false);
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvc, setCvc] = useState("");
-
-  const canPay = agreed && cardNumber.length >= 16 && expiry.length >= 4 && cvc.length >= 3;
-
   return (
     <div className="flex flex-col gap-6">
-      {/* Card fields */}
-      <div className="flex flex-col gap-1.5">
-        <label className="font-[family-name:var(--font-body)] text-[13px] font-semibold text-secondary">Card Information</label>
-        <div className="flex items-center bg-surface rounded-lg border border-border h-11 px-3.5">
-          <input
-            type="text"
-            placeholder="1234 5678 9012 3456"
-            value={cardNumber}
-            onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 16))}
-            className="flex-1 bg-transparent text-sm font-[family-name:var(--font-mono)] text-primary placeholder:text-muted outline-none"
-          />
-          <div className="flex gap-1.5">
-            <div className="w-8 h-5 bg-[#1A1F71] rounded text-[7px] font-bold text-white flex items-center justify-center font-[family-name:var(--font-headline)]">VISA</div>
-            <div className="w-8 h-5 bg-[#EB001B] rounded text-[8px] font-bold text-white flex items-center justify-center font-[family-name:var(--font-headline)]">MC</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="MM / YY"
-            value={expiry}
-            onChange={(e) => setExpiry(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            className="w-full h-11 px-3.5 bg-surface rounded-lg border border-border text-sm font-[family-name:var(--font-mono)] text-primary placeholder:text-muted outline-none focus:border-accent transition-colors"
-          />
-        </div>
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="CVC"
-            value={cvc}
-            onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            className="w-full h-11 px-3.5 bg-surface rounded-lg border border-border text-sm font-[family-name:var(--font-mono)] text-primary placeholder:text-muted outline-none focus:border-accent transition-colors"
-          />
-        </div>
-      </div>
-
-      {/* Terms */}
-      <label className="flex items-center gap-3 cursor-pointer">
-        <div
-          onClick={() => setAgreed(!agreed)}
-          className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${
-            agreed ? "bg-accent border-accent" : "bg-white border-border"
-          }`}
-        >
-          {agreed && (
-            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-        </div>
-        <span className="font-[family-name:var(--font-body)] text-[13px] text-secondary">
-          I agree to the cancellation policy and terms of service
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <span className="font-[family-name:var(--font-body)] text-sm text-amber-800 font-medium">
+          Dev Mode — Payment processing not connected. Click below to complete booking.
         </span>
-      </label>
+      </div>
 
       <button
-        disabled={!canPay || submitting}
-        onClick={() => canPay && !submitting && onPay()}
+        disabled={submitting}
+        onClick={() => !submitting && onPay()}
         className={`w-full h-[52px] rounded-lg font-[family-name:var(--font-headline)] text-lg font-bold tracking-wide flex items-center justify-center gap-2 transition-colors ${
-          canPay && !submitting ? "bg-accent text-white hover:bg-accent/90" : "bg-elevated text-muted"
+          !submitting ? "bg-accent text-white hover:bg-accent/90" : "bg-elevated text-muted"
         }`}
       >
         {submitting ? (
@@ -325,7 +266,7 @@ function MockPaymentForm({
               <rect x="3" y="11" width="18" height="11" rx="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            PAY ${price}.00
+            BOOK NOW — ${price}.00
           </>
         )}
       </button>
