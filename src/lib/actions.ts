@@ -51,13 +51,6 @@ export async function getSessionsForDate(dateStr: string) {
   }));
 }
 
-export async function getReviews() {
-  return prisma.review.findMany({
-    where: { visible: true },
-    orderBy: { sortOrder: "asc" },
-  });
-}
-
 // ─── WRITE ──────────────────────────────────────────
 
 export async function createBooking(data: {

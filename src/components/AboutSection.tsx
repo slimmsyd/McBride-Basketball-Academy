@@ -50,7 +50,7 @@ export default function AboutSection() {
           <img
             src="/assets/isaac-portrait.gif"
             alt="Isaac McBride - #10 jersey with basketball"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
           />
         </div>
         <div className="flex flex-col gap-6 md:gap-8">

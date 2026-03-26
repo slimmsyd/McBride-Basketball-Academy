@@ -1,4 +1,8 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import type { BookingData } from "@/app/booking/page";
+import { checkCalendarConnected } from "@/lib/actions";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -9,6 +13,9 @@ const DAY_NAMES = [
 ];
 
 export default function BookingConfirmation({ booking }: { booking: BookingData }) {
+  const [emailConnected, setEmailConnected] = useState(false);
+  useEffect(() => { checkCalendarConnected().then(setEmailConnected); }, []);
+
   const dateStr = `${DAY_NAMES[booking.date.getDay()]}, ${MONTH_NAMES[booking.date.getMonth()]} ${booking.date.getDate()}, ${booking.date.getFullYear()}`;
 
   return (
@@ -37,7 +44,9 @@ export default function BookingConfirmation({ booking }: { booking: BookingData 
         YOU&apos;RE BOOKED!
       </h1>
       <p className="font-[family-name:var(--font-body)] text-[15px] text-secondary text-center">
-        A confirmation has been sent to {booking.player?.parentEmail}
+        {emailConnected
+          ? `A confirmation has been sent to ${booking.player?.parentEmail ?? "your email"}`
+          : `Your booking is confirmed for ${booking.player?.parentEmail ?? "your email"}`}
       </p>
 
       {/* Confirmation card */}
