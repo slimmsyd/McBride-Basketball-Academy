@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Calendar, Check } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import {
   getAllSessionTypes,
   createSessionType,
   updateSessionType,
   toggleSessionTypeActive,
 } from "@/lib/admin-actions";
+import { checkCalendarConnected } from "@/lib/actions";
 
 type SessionType = {
   id: string;
@@ -37,10 +39,16 @@ export default function AdminProgramsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const searchParams = useSearchParams();
 
   const load = async () => {
-    const data = await getAllSessionTypes();
+    const [data, connected] = await Promise.all([
+      getAllSessionTypes(),
+      checkCalendarConnected(),
+    ]);
     setTypes(data.map((t) => ({ ...t, price: Number(t.price) })));
+    setCalendarConnected(connected);
     setLoading(false);
   };
 
@@ -115,6 +123,43 @@ export default function AdminProgramsPage() {
           Create Session Type
         </button>
       </div>
+
+      {/* Google Calendar connection */}
+      <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-[#E4E4E7]">
+        <div className="flex items-center gap-3">
+          <Calendar size={20} className={calendarConnected ? "text-[#22C55E]" : "text-[#A1A1AA]"} />
+          <div>
+            <span className="font-[family-name:var(--font-body)] text-sm font-semibold text-[#18181B]">
+              Google Calendar
+            </span>
+            <span className="font-[family-name:var(--font-body)] text-xs text-[#52525B] block">
+              {calendarConnected
+                ? "Connected — bookings auto-sync to Issac's calendar"
+                : "Connect to auto-add bookings to Issac's calendar"}
+            </span>
+          </div>
+        </div>
+        {calendarConnected ? (
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-[#22C55E] bg-[#22C55E]/10 px-3 py-1 rounded-full font-[family-name:var(--font-body)]">
+            <Check size={14} /> Connected
+          </span>
+        ) : (
+          <a
+            href="/api/auth/google"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-lg bg-[#2979FF] text-white font-[family-name:var(--font-body)] text-sm font-semibold hover:bg-[#2979FF]/90 transition-colors"
+          >
+            Connect Calendar
+          </a>
+        )}
+      </div>
+
+      {searchParams.get("google") === "connected" && (
+        <div className="p-3 bg-[#22C55E]/10 rounded-lg border border-[#22C55E]/20">
+          <span className="font-[family-name:var(--font-body)] text-sm text-[#22C55E] font-medium">
+            Google Calendar connected successfully! Bookings will now auto-sync.
+          </span>
+        </div>
+      )}
 
       {/* Create form */}
       {creating && (

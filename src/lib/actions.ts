@@ -2,6 +2,7 @@
 
 import { prisma } from "./prisma";
 import { stripe, isStripeConfigured } from "./stripe";
+import { createCalendarEvent, isCalendarConnected } from "./google-calendar";
 
 // ─── READ ───────────────────────────────────────────
 
@@ -109,6 +110,23 @@ export async function createBooking(data: {
     },
   });
 
+  // Create Google Calendar event (non-blocking — don't fail booking if calendar fails)
+  try {
+    await createCalendarEvent({
+      playerFirstName: booking.playerFirstName,
+      playerLastName: booking.playerLastName,
+      parentName: booking.parentName,
+      parentEmail: booking.parentEmail,
+      parentPhone: booking.parentPhone,
+      sessionName: booking.scheduledSession.sessionType.name,
+      sessionTime: booking.scheduledSession.sessionType.defaultTime,
+      date: booking.scheduledSession.date.toISOString(),
+      confirmationNumber: booking.confirmationNumber,
+    });
+  } catch (e) {
+    console.error("Failed to create calendar event:", e);
+  }
+
   return {
     id: booking.id,
     confirmationNumber: booking.confirmationNumber,
@@ -203,6 +221,23 @@ export async function createBookingWithPayment(data: {
     },
   });
 
+  // Create Google Calendar event
+  try {
+    await createCalendarEvent({
+      playerFirstName: booking.playerFirstName,
+      playerLastName: booking.playerLastName,
+      parentName: booking.parentName,
+      parentEmail: booking.parentEmail,
+      parentPhone: booking.parentPhone,
+      sessionName: booking.scheduledSession.sessionType.name,
+      sessionTime: booking.scheduledSession.sessionType.defaultTime,
+      date: booking.scheduledSession.date.toISOString(),
+      confirmationNumber: booking.confirmationNumber,
+    });
+  } catch (e) {
+    console.error("Failed to create calendar event:", e);
+  }
+
   return {
     id: booking.id,
     confirmationNumber: booking.confirmationNumber,
@@ -214,6 +249,12 @@ export async function createBookingWithPayment(data: {
     parentEmail: booking.parentEmail,
     paymentAmount: Number(booking.paymentAmount),
   };
+}
+
+// ─── GOOGLE CALENDAR ───────────────────────────────
+
+export async function checkCalendarConnected() {
+  return isCalendarConnected();
 }
 
 // ─── HELPERS ────────────────────────────────────────
