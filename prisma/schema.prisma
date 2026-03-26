@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model SessionType {
+  id              String   @id @default(uuid())
+  name            String
+  grade           String
+  defaultTime     String   @map("default_time")
+  durationMinutes Int      @default(60) @map("duration_minutes")
+  price           Decimal  @db.Decimal(10, 2)
+  capacity        Int      @default(10)
+  color           String   @default("#2979FF")
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  scheduledSessions ScheduledSession[]
+
+  @@map("session_types")
+}
+
+model ScheduledSession {
+  id            String      @id @default(uuid())
+  sessionTypeId String      @map("session_type_id")
+  sessionType   SessionType @relation(fields: [sessionTypeId], references: [id])
+  date          DateTime    @db.Date
+  startTime     String      @map("start_time")
+  endTime       String      @map("end_time")
+  capacity      Int
+  isCancelled   Boolean     @default(false) @map("is_cancelled")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  bookings Booking[]
+  waitlist Waitlist[]
+
+  @@map("scheduled_sessions")
+}
+
+model Booking {
+  id                 String           @id @default(uuid())
+  scheduledSessionId String           @map("scheduled_session_id")
+  scheduledSession   ScheduledSession @relation(fields: [scheduledSessionId], references: [id])
+  confirmationNumber String           @unique @map("confirmation_number")
+  playerFirstName    String           @map("player_first_name")
+  playerLastName     String           @map("player_last_name")
+  playerGrade        String           @map("player_grade")
+  playerAge          Int?             @map("player_age")
+  parentName         String           @map("parent_name")
+  parentEmail        String           @map("parent_email")
+  parentPhone        String           @map("parent_phone")
+  emergencyContact   String?          @map("emergency_contact")
+  emergencyPhone     String?          @map("emergency_phone")
+  medicalNotes       String?          @map("medical_notes")
+  paymentStatus      String           @default("pending") @map("payment_status")
+  paymentAmount      Decimal          @db.Decimal(10, 2) @map("payment_amount")
+  stripePaymentId    String?          @map("stripe_payment_id")
+  status             String           @default("confirmed")
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  @@map("bookings")
+}
+
+model Waitlist {
+  id                 String           @id @default(uuid())
+  scheduledSessionId String           @map("scheduled_session_id")
+  scheduledSession   ScheduledSession @relation(fields: [scheduledSessionId], references: [id])
+  parentName         String           @map("parent_name")
+  parentEmail        String           @map("parent_email")
+  parentPhone        String           @map("parent_phone")
+  playerName         String           @map("player_name")
+  notified           Boolean          @default(false)
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  @@map("waitlist")
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  stars        Int
+  quote        String
+  reviewerName String   @map("reviewer_name")
+  reviewerRole String   @map("reviewer_role")
+  visible      Boolean  @default(true)
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("reviews")
+}
+
+model SiteSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
