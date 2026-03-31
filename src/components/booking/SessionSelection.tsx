@@ -60,6 +60,12 @@ export default function SessionSelection({
     day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
   const isSelected = (day: number) =>
     day === selectedDate.getDate() && viewMonth === selectedDate.getMonth() && viewYear === selectedDate.getFullYear();
+  const isPast = (day: number) => {
+    const d = new Date(viewYear, viewMonth, day);
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return d < todayStart;
+  };
+  const isCurrentOrPastMonth = viewYear < today.getFullYear() || (viewYear === today.getFullYear() && viewMonth <= today.getMonth());
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
@@ -111,7 +117,7 @@ export default function SessionSelection({
             {MONTH_NAMES[viewMonth]} {viewYear}
           </span>
           <div className="flex gap-1">
-            <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-secondary hover:bg-elevated transition-colors text-sm">&larr;</button>
+            <button onClick={prevMonth} disabled={isCurrentOrPastMonth} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-sm ${isCurrentOrPastMonth ? "bg-surface text-muted cursor-not-allowed" : "bg-surface text-secondary hover:bg-elevated"}`}>&larr;</button>
             <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-secondary hover:bg-elevated transition-colors text-sm">&rarr;</button>
           </div>
         </div>
@@ -119,18 +125,22 @@ export default function SessionSelection({
           {DAYS_OF_WEEK.map((d) => (
             <div key={d} className="font-[family-name:var(--font-mono)] text-[10px] font-medium text-muted text-center py-1">{d}</div>
           ))}
-          {days.map((day, i) => (
-            <button
-              key={i}
-              onClick={() => day && setSelectedDate(new Date(viewYear, viewMonth, day))}
-              className={`h-9 flex items-center justify-center text-xs font-medium rounded-md transition-colors ${
-                day && isSelected(day) ? "bg-accent text-white font-bold"
-                  : day && isToday(day) ? "text-accent font-bold ring-2 ring-accent/30"
-                    : day ? "text-primary hover:bg-surface" : ""
-              }`}
-              disabled={!day}
-            >{day}</button>
-          ))}
+          {days.map((day, i) => {
+            const past = day ? isPast(day) : false;
+            return (
+              <button
+                key={i}
+                onClick={() => day && !past && setSelectedDate(new Date(viewYear, viewMonth, day))}
+                className={`h-9 flex items-center justify-center text-xs font-medium rounded-md transition-colors ${
+                  day && past ? "text-muted/40 cursor-not-allowed"
+                    : day && isSelected(day) ? "bg-accent text-white font-bold"
+                      : day && isToday(day) ? "text-accent font-bold ring-2 ring-accent/30"
+                        : day ? "text-primary hover:bg-surface" : ""
+                }`}
+                disabled={!day || past}
+              >{day}</button>
+            );
+          })}
         </div>
       </div>
 

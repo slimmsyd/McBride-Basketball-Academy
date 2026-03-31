@@ -96,6 +96,13 @@ async function createBookingCore(data: BookingInput) {
     });
 
     if (!session) throw new Error("Session not found");
+
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    if (session.date < todayUTC) {
+      throw new Error("Cannot book a session in the past");
+    }
+
     if (session._count.bookings >= session.capacity) {
       throw new Error("Session is full");
     }
