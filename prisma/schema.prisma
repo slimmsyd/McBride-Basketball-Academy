@@ -39,6 +39,8 @@ model ScheduledSession {
   bookings Booking[]
   waitlist Waitlist[]
 
+  @@index([sessionTypeId])
+  @@index([date, isCancelled])
   @@map("scheduled_sessions")
 }
 
@@ -59,10 +61,15 @@ model Booking {
   medicalNotes       String?          @map("medical_notes")
   paymentStatus      String           @default("pending") @map("payment_status")
   paymentAmount      Decimal          @db.Decimal(10, 2) @map("payment_amount")
-  stripePaymentId    String?          @map("stripe_payment_id")
-  status             String           @default("confirmed")
-  createdAt          DateTime         @default(now()) @map("created_at")
+  stripePaymentId       String?          @map("stripe_payment_id")
+  googleCalendarEventId String?          @map("google_calendar_event_id")
+  status                String           @default("confirmed")
+  cancelledAt           DateTime?        @map("cancelled_at")
+  createdAt             DateTime         @default(now()) @map("created_at")
 
+  @@index([scheduledSessionId])
+  @@index([status])
+  @@index([stripePaymentId])
   @@map("bookings")
 }
 
@@ -77,6 +84,7 @@ model Waitlist {
   notified           Boolean          @default(false)
   createdAt          DateTime         @default(now()) @map("created_at")
 
+  @@index([scheduledSessionId])
   @@map("waitlist")
 }
 

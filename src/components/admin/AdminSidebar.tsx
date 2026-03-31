@@ -2,11 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Layers, Calendar } from "lucide-react";
+import { Layers, Calendar, ClipboardList } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Programs", href: "/admin", icon: Layers },
   { label: "Schedule", href: "/admin/schedule", icon: Calendar },
+  { label: "Bookings", href: "/admin/bookings", icon: ClipboardList },
 ];
 
 export default function AdminSidebar() {

@@ -11,9 +11,9 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-  : null;
+const STRIPE_PK = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
+const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
+const isTestMode = STRIPE_PK.startsWith("pk_test_");
 
 export default function PaymentCheckout({
   booking,
@@ -103,10 +103,14 @@ export default function PaymentCheckout({
 
           {stripeEnabled && clientSecret && stripePromise ? (
             <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
-              <StripePaymentForm onPay={onPay} submitting={submitting} price={booking.session?.price ?? 0} />
+              <StripePaymentForm onPay={onPay} submitting={submitting} price={booking.session?.price ?? 0} clientSecret={clientSecret} />
             </Elements>
           ) : (
-            <TestBookingForm onPay={() => onPay()} submitting={submitting} price={booking.session?.price ?? 0} />
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+              <p className="font-[family-name:var(--font-body)] text-sm text-red-700 font-medium">
+                Payment processing is currently unavailable. Please try again later or contact us for assistance.
+              </p>
+            </div>
           )}
 
           {/* Security note */}
@@ -148,10 +152,12 @@ function StripePaymentForm({
   onPay,
   submitting,
   price,
+  clientSecret,
 }: {
   onPay: (stripePaymentId?: string) => void;
   submitting?: boolean;
   price: number;
+  clientSecret: string | null;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -185,8 +191,40 @@ function StripePaymentForm({
     }
   };
 
+  const handleTestPay = async () => {
+    if (!stripe) return;
+    setProcessing(true);
+    setError(null);
+
+    const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+      clientSecret!,
+      { payment_method: "pm_card_visa" }
+    );
+
+    if (confirmError) {
+      setError(confirmError.message ?? "Test payment failed");
+      setProcessing(false);
+    } else if (paymentIntent?.status === "succeeded") {
+      onPay(paymentIntent.id);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
+      {isTestMode && (
+        <button
+          onClick={handleTestPay}
+          disabled={processing || submitting}
+          className="w-full h-[44px] rounded-lg border-2 border-dashed border-amber-400 bg-amber-50 font-[family-name:var(--font-body)] text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2"
+        >
+          {processing ? (
+            <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>Test Pay with 4242 (skip form)</>
+          )}
+        </button>
+      )}
+
       <PaymentElement />
 
       {error && (

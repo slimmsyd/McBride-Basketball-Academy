@@ -48,8 +48,8 @@ export default function AboutSection() {
         <div className="w-full md:w-[500px] h-[350px] md:h-[600px] relative md:flex-shrink-0 rounded-2xl overflow-hidden md:sticky md:top-24 md:self-start">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/isaac-portrait.gif"
-            alt="Isaac McBride - #10 jersey with basketball"
+            src="/assets/isaac-court.jpg"
+            alt="Isaac McBride - #10 on court at ORU"
             className="w-full h-full object-cover object-top"
           />
         </div>

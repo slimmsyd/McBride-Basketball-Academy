@@ -4,7 +4,14 @@
       "Bash(claude mcp list)",
       "Bash(node --version)",
       "Read(//Users/sydneysanders/Desktop/Code_Projects/**)",
-      "Bash(pip3 show apify-client)"
+      "Bash(pip3 show apify-client)",
+      "Bash(grep -n \"update.*booking\\\\|delete.*booking\\\\|calendar.*update\" /Users/sydneysanders/Desktop/Code_Projects/BasketBallBookingSite/src/lib/*.ts)",
+      "Bash(npx next:*)",
+      "WebFetch(domain:b2be48a3250d8e80.vercel-dns-017.com)",
+      "Read(//Users/sydneysanders/Desktop/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/sydneysanders/Desktop"
     ]
   }
 }

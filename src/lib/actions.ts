@@ -51,9 +51,9 @@ export async function getSessionsForDate(dateStr: string) {
   }));
 }
 
-// ─── WRITE ──────────────────────────────────────────
+// ─── BOOKING INPUT TYPE ────────────────────────────
 
-export async function createBooking(data: {
+type BookingInput = {
   scheduledSessionId: string;
   playerFirstName: string;
   playerLastName: string;
@@ -66,48 +66,70 @@ export async function createBooking(data: {
   emergencyPhone?: string;
   medicalNotes?: string;
   paymentAmount: number;
-}) {
-  // Get the session to verify it exists and has spots
-  const session = await prisma.scheduledSession.findUnique({
-    where: { id: data.scheduledSessionId },
-    include: {
-      _count: { select: { bookings: { where: { status: "confirmed" } } } },
-    },
-  });
+  stripePaymentId: string;
+};
 
-  if (!session) throw new Error("Session not found");
-  if (session._count.bookings >= session.capacity) {
-    throw new Error("Session is full");
+// ─── SHARED BOOKING CORE ──────────────────────────
+
+async function createBookingCore(data: BookingInput) {
+  // Require payment when Stripe is configured
+  if (isStripeConfigured() && !data.stripePaymentId) {
+    throw new Error("Payment is required");
   }
 
-  const confirmationNumber = generateConfNumber(session.date);
+  // Verify Stripe payment actually succeeded
+  if (data.stripePaymentId) {
+    if (!stripe) throw new Error("Stripe is not configured");
+    const paymentIntent = await stripe.paymentIntents.retrieve(data.stripePaymentId);
+    if (paymentIntent.status !== "succeeded") {
+      throw new Error("Payment has not been completed");
+    }
+  }
 
-  const booking = await prisma.booking.create({
-    data: {
-      scheduledSessionId: data.scheduledSessionId,
-      confirmationNumber,
-      playerFirstName: data.playerFirstName,
-      playerLastName: data.playerLastName,
-      playerGrade: data.playerGrade,
-      playerAge: data.playerAge,
-      parentName: data.parentName,
-      parentEmail: data.parentEmail,
-      parentPhone: data.parentPhone,
-      emergencyContact: data.emergencyContact,
-      emergencyPhone: data.emergencyPhone,
-      medicalNotes: data.medicalNotes,
-      paymentAmount: data.paymentAmount,
-      paymentStatus: "paid",
-      status: "confirmed",
-    },
-    include: {
-      scheduledSession: { include: { sessionType: true } },
-    },
-  });
+  // Atomic capacity check + booking creation to prevent overbooking
+  const booking = await prisma.$transaction(async (tx) => {
+    const session = await tx.scheduledSession.findUnique({
+      where: { id: data.scheduledSessionId },
+      include: {
+        _count: { select: { bookings: { where: { status: "confirmed" } } } },
+      },
+    });
 
-  // Create Google Calendar event (non-blocking — don't fail booking if calendar fails)
+    if (!session) throw new Error("Session not found");
+    if (session._count.bookings >= session.capacity) {
+      throw new Error("Session is full");
+    }
+
+    const confirmationNumber = generateConfNumber(session.date);
+
+    return tx.booking.create({
+      data: {
+        scheduledSessionId: data.scheduledSessionId,
+        confirmationNumber,
+        playerFirstName: data.playerFirstName,
+        playerLastName: data.playerLastName,
+        playerGrade: data.playerGrade,
+        playerAge: data.playerAge,
+        parentName: data.parentName,
+        parentEmail: data.parentEmail,
+        parentPhone: data.parentPhone,
+        emergencyContact: data.emergencyContact,
+        emergencyPhone: data.emergencyPhone,
+        medicalNotes: data.medicalNotes,
+        paymentAmount: data.paymentAmount,
+        paymentStatus: "paid",
+        stripePaymentId: data.stripePaymentId,
+        status: "confirmed",
+      },
+      include: {
+        scheduledSession: { include: { sessionType: true } },
+      },
+    });
+  }, { isolationLevel: "Serializable" });
+
+  // Create Google Calendar event and store the event ID
   try {
-    await createCalendarEvent({
+    const calendarEventId = await createCalendarEvent({
       playerFirstName: booking.playerFirstName,
       playerLastName: booking.playerLastName,
       parentName: booking.parentName,
@@ -118,6 +140,12 @@ export async function createBooking(data: {
       date: booking.scheduledSession.date.toISOString(),
       confirmationNumber: booking.confirmationNumber,
     });
+    if (calendarEventId) {
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { googleCalendarEventId: calendarEventId },
+      });
+    }
   } catch (e) {
     console.error("Failed to create calendar event:", e);
   }
@@ -154,6 +182,12 @@ export async function createBooking(data: {
     parentEmail: booking.parentEmail,
     paymentAmount: Number(booking.paymentAmount),
   };
+}
+
+// ─── PUBLIC BOOKING ACTION ────────────────────────
+
+export async function createBookingWithPayment(data: BookingInput) {
+  return createBookingCore(data);
 }
 
 export async function joinWaitlist(data: {
@@ -184,110 +218,6 @@ export async function createPaymentIntent(amount: number, metadata: Record<strin
   return { clientSecret: paymentIntent.client_secret! };
 }
 
-export async function createBookingWithPayment(data: {
-  scheduledSessionId: string;
-  playerFirstName: string;
-  playerLastName: string;
-  playerGrade: string;
-  playerAge?: number;
-  parentName: string;
-  parentEmail: string;
-  parentPhone: string;
-  emergencyContact?: string;
-  emergencyPhone?: string;
-  medicalNotes?: string;
-  paymentAmount: number;
-  stripePaymentId: string;
-}) {
-  const session = await prisma.scheduledSession.findUnique({
-    where: { id: data.scheduledSessionId },
-    include: {
-      _count: { select: { bookings: { where: { status: "confirmed" } } } },
-    },
-  });
-
-  if (!session) throw new Error("Session not found");
-  if (session._count.bookings >= session.capacity) {
-    throw new Error("Session is full");
-  }
-
-  const confirmationNumber = generateConfNumber(session.date);
-
-  const booking = await prisma.booking.create({
-    data: {
-      scheduledSessionId: data.scheduledSessionId,
-      confirmationNumber,
-      playerFirstName: data.playerFirstName,
-      playerLastName: data.playerLastName,
-      playerGrade: data.playerGrade,
-      playerAge: data.playerAge,
-      parentName: data.parentName,
-      parentEmail: data.parentEmail,
-      parentPhone: data.parentPhone,
-      emergencyContact: data.emergencyContact,
-      emergencyPhone: data.emergencyPhone,
-      medicalNotes: data.medicalNotes,
-      paymentAmount: data.paymentAmount,
-      paymentStatus: "paid",
-      stripePaymentId: data.stripePaymentId,
-      status: "confirmed",
-    },
-    include: {
-      scheduledSession: { include: { sessionType: true } },
-    },
-  });
-
-  // Create Google Calendar event
-  try {
-    await createCalendarEvent({
-      playerFirstName: booking.playerFirstName,
-      playerLastName: booking.playerLastName,
-      parentName: booking.parentName,
-      parentEmail: booking.parentEmail,
-      parentPhone: booking.parentPhone,
-      sessionName: booking.scheduledSession.sessionType.name,
-      sessionTime: booking.scheduledSession.sessionType.defaultTime,
-      date: booking.scheduledSession.date.toISOString(),
-      confirmationNumber: booking.confirmationNumber,
-    });
-  } catch (e) {
-    console.error("Failed to create calendar event:", e);
-  }
-
-  // Send confirmation emails (non-blocking)
-  try {
-    await sendBookingConfirmationEmails({
-      confirmationNumber: booking.confirmationNumber,
-      playerFirstName: booking.playerFirstName,
-      playerLastName: booking.playerLastName,
-      parentName: booking.parentName,
-      parentEmail: booking.parentEmail,
-      parentPhone: booking.parentPhone,
-      sessionName: booking.scheduledSession.sessionType.name,
-      sessionTime: booking.scheduledSession.sessionType.defaultTime,
-      date: booking.scheduledSession.date.toISOString(),
-      paymentAmount: Number(booking.paymentAmount),
-    });
-  } catch (e) {
-    console.error("Failed to send confirmation emails:", e);
-  }
-
-  revalidatePath("/");
-  revalidatePath("/booking");
-
-  return {
-    id: booking.id,
-    confirmationNumber: booking.confirmationNumber,
-    playerFirstName: booking.playerFirstName,
-    playerLastName: booking.playerLastName,
-    sessionName: booking.scheduledSession.sessionType.name,
-    sessionTime: booking.scheduledSession.sessionType.defaultTime,
-    date: booking.scheduledSession.date.toISOString(),
-    parentEmail: booking.parentEmail,
-    paymentAmount: Number(booking.paymentAmount),
-  };
-}
-
 // ─── GOOGLE CALENDAR ───────────────────────────────
 
 export async function checkCalendarConnected() {
@@ -309,7 +239,7 @@ function generateConfNumber(date: Date): string {
   const y = date.getUTCFullYear();
   const m = String(date.getUTCMonth() + 1).padStart(2, "0");
   const d = String(date.getUTCDate()).padStart(2, "0");
-  const rand = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
+  const rand = crypto.randomUUID().slice(0, 6).toUpperCase();
   return `IMB-${y}-${m}${d}-${rand}`;
 }
 

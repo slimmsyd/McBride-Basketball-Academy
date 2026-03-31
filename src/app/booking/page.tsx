@@ -5,7 +5,7 @@ import SessionSelection from "@/components/booking/SessionSelection";
 import PlayerInfoForm from "@/components/booking/PlayerInfoForm";
 import PaymentCheckout from "@/components/booking/PaymentCheckout";
 import BookingConfirmation from "@/components/booking/BookingConfirmation";
-import { createBooking, createBookingWithPayment } from "@/lib/actions";
+import { createBookingWithPayment } from "@/lib/actions";
 
 export interface BookingData {
   date: Date;
@@ -62,9 +62,10 @@ export default function BookingPage() {
         paymentAmount: booking.session.price,
       };
 
-      const result = stripePaymentId
-        ? await createBookingWithPayment({ ...bookingData, stripePaymentId })
-        : await createBooking(bookingData);
+      if (!stripePaymentId) {
+        throw new Error("Payment is required to complete booking");
+      }
+      const result = await createBookingWithPayment({ ...bookingData, stripePaymentId });
 
       setBooking({
         ...booking,
