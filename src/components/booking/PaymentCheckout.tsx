@@ -191,26 +191,26 @@ function StripePaymentForm({
     }
   };
 
-  const handleTestPay = async () => {
-    if (!stripe) return;
-    setProcessing(true);
-    setError(null);
-
-    const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-      clientSecret!,
-      { payment_method: "pm_card_visa" }
-    );
-
-    if (confirmError) {
-      setError(confirmError.message ?? "Test payment failed");
-      setProcessing(false);
-    } else if (paymentIntent?.status === "succeeded") {
-      onPay(paymentIntent.id);
-    }
-  };
+  // --- TEST MODE: Quick-pay with test card (uncomment when using pk_test_ keys) ---
+  // const handleTestPay = async () => {
+  //   if (!stripe) return;
+  //   setProcessing(true);
+  //   setError(null);
+  //   const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+  //     clientSecret!,
+  //     { payment_method: "pm_card_visa" }
+  //   );
+  //   if (confirmError) {
+  //     setError(confirmError.message ?? "Test payment failed");
+  //     setProcessing(false);
+  //   } else if (paymentIntent?.status === "succeeded") {
+  //     onPay(paymentIntent.id);
+  //   }
+  // };
 
   return (
     <div className="flex flex-col gap-6">
+      {/* TEST MODE: Quick-pay button (uncomment when using pk_test_ keys)
       {isTestMode && (
         <button
           onClick={handleTestPay}
@@ -224,6 +224,7 @@ function StripePaymentForm({
           )}
         </button>
       )}
+      */}
 
       <PaymentElement />
 
