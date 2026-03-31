@@ -47,7 +47,7 @@ export default function ContactSection() {
           <div className="flex-1 flex flex-col gap-8">
             <div className="flex flex-col gap-2">
               <span className="font-[family-name:var(--font-headline)] text-xl md:text-2xl font-extrabold text-primary tracking-wide">
-                ISAAC McBRIDE
+                ISSAC McBRIDE
               </span>
               <span className="font-[family-name:var(--font-body)] text-sm md:text-[15px] text-secondary">
                 Elite Basketball Training

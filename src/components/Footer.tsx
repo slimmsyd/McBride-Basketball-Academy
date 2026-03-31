@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="h-px bg-border" />
         <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 py-6">
           <span className="font-[family-name:var(--font-body)] text-xs text-muted text-center md:text-left">
-            &copy; 2026 Isaac McBride Basketball Training. All rights reserved.
+            &copy; 2026 ISAAC McBRIDE Basketball Training. All rights reserved.
             &nbsp;&middot;&nbsp; Powered by{" "}
             <a
               href="https://www.0ncode.com/"

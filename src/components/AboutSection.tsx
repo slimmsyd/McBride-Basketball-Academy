@@ -49,7 +49,7 @@ export default function AboutSection() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/isaac-court.jpg"
-            alt="Isaac McBride - #10 on court at ORU"
+            alt="ISAAC McBRIDE - #10 on court at ORU"
             className="w-full h-full object-cover object-top"
           />
         </div>
@@ -90,7 +90,7 @@ export default function AboutSection() {
               Bless.&rdquo;
             </p>
             <span className="font-[family-name:var(--font-headline)] text-sm font-bold text-primary mt-3 block">
-              &mdash; Issac McBride
+              &mdash; ISSAC McBRIDE
             </span>
           </div>
 

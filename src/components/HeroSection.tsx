@@ -1,15 +1,15 @@
 import Image from "next/image";
 
 const heroImages = [
-  { src: "/assets/hero-1.jpg", alt: "Isaac McBride - March Madness tunnel walk" },
-  { src: "/assets/hero-2.jpg", alt: "Isaac McBride - #10 jersey portrait with basketball" },
-  { src: "/assets/hero-3.jpg", alt: "Isaac McBride - Oral Roberts seated with basketball" },
-  { src: "/assets/hero-4.webp", alt: "Isaac McBride - National Player of the Week" },
+  { src: "/assets/hero-1.jpg", alt: "ISAAC McBRIDE - March Madness tunnel walk" },
+  { src: "/assets/hero-2.jpg", alt: "ISAAC McBRIDE - #10 jersey portrait with basketball" },
+  { src: "/assets/hero-3.jpg", alt: "ISAAC McBRIDE - Oral Roberts seated with basketball" },
+  { src: "/assets/hero-4.webp", alt: "ISAAC McBRIDE - National Player of the Week" },
 ];
 
 const mobileHeroImage = {
   src: "/assets/hero-mobile.webp",
-  alt: "Isaac McBride - Oscar Robertson National Player of the Week",
+  alt: "ISAAC McBRIDE - Oscar Robertson National Player of the Week",
 };
 
 export default function HeroSection() {
@@ -50,7 +50,7 @@ export default function HeroSection() {
       {/* Hero text */}
       <div className="absolute bottom-16 md:bottom-24 left-6 md:left-20 z-10">
         <h1 className="font-[family-name:var(--font-headline)] text-5xl md:text-[80px] font-extrabold text-primary leading-[0.95] tracking-wide">
-          ISAAC McBRIDE
+          ISSAC McBRIDE
         </h1>
         <p className="font-[family-name:var(--font-body)] text-lg md:text-2xl font-semibold text-secondary tracking-[4px] mt-3">
           McBride Basketball Academy

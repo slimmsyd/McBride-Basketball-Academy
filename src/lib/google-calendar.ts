@@ -13,7 +13,7 @@ const SCOPES = [
   "https://www.googleapis.com/auth/userinfo.email",
 ];
 
-/** Generate the URL Issac clicks to authorize his Google Calendar */
+/** Generate the URL ISAAC clicks to authorize his Google Calendar */
 export function getAuthUrl(): string {
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
