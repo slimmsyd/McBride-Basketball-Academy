@@ -219,6 +219,7 @@ export async function createPaymentIntent(amount: number, metadata: Record<strin
   const paymentIntent = await stripe.paymentIntents.create({
     amount: Math.round(amount * 100), // cents
     currency: "usd",
+    payment_method_types: ["card"],
     metadata,
   });
 
