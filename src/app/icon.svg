@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#2979FF"/>
+  <text x="256" y="290" text-anchor="middle" dominant-baseline="central" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="240" fill="white" letter-spacing="-10">IM</text>
+  <text x="256" y="410" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-weight="700" font-size="72" fill="rgba(255,255,255,0.85)" letter-spacing="8">MBA</text>
+</svg>
