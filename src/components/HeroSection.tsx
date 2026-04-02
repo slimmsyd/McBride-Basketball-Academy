@@ -1,15 +1,15 @@
 import Image from "next/image";
 
 const heroImages = [
-  { src: "/assets/hero-1.jpg", alt: "ISAAC McBRIDE - March Madness tunnel walk" },
-  { src: "/assets/hero-2.jpg", alt: "ISAAC McBRIDE - #10 jersey portrait with basketball" },
-  { src: "/assets/hero-3.jpg", alt: "ISAAC McBRIDE - Oral Roberts seated with basketball" },
-  { src: "/assets/hero-4.webp", alt: "ISAAC McBRIDE - National Player of the Week" },
+  { src: "/assets/hero-1.jpg", alt: "Issac McBride - March Madness tunnel walk" },
+  { src: "/assets/hero-2.jpg", alt: "Issac McBride - #10 jersey portrait with basketball" },
+  { src: "/assets/hero-3.jpg", alt: "Issac McBride - Oral Roberts seated with basketball" },
+  { src: "/assets/hero-4.webp", alt: "Issac McBride - National Player of the Week" },
 ];
 
 const mobileHeroImage = {
   src: "/assets/hero-mobile.webp",
-  alt: "ISAAC McBRIDE - Oscar Robertson National Player of the Week",
+  alt: "Issac McBride - Oscar Robertson National Player of the Week",
 };
 
 export default function HeroSection() {

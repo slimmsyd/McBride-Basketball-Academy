@@ -21,9 +21,9 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ISAAC McBRIDE | Elite Basketball Training",
+  title: "Issac McBride | Elite Basketball Training",
   description:
-    "Book basketball training sessions with ISAAC McBRIDE. Middle school and high school programs available daily.",
+    "Book basketball training sessions with Issac McBride. Middle school and high school programs available daily.",
 };
 
 export default function RootLayout({

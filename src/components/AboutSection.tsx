@@ -47,7 +47,7 @@ export default function AboutSection() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/isaac-court.jpg"
-            alt="ISAAC McBRIDE - #10 on court at ORU"
+            alt="Issac McBride - #10 on court at ORU"
             className="w-full h-full object-cover object-top"
           />
         </div>
@@ -77,7 +77,7 @@ export default function AboutSection() {
               &ldquo;I&apos;m not the basketball guru. I&apos;m someone blessed by God with a gift, and I stewarded it through countless hours of hard work. MBA is where your athlete can cultivate their passion, sharpen their skills, and steward their gifts on the floor. I believe from experience, I have a pretty good idea of how to get better. Thank you, God Bless.&rdquo;
             </p>
             <span className="font-[family-name:var(--font-headline)] text-sm font-bold text-primary mt-2 block">
-              &mdash; ISAAC McBRIDE
+              &mdash; Issac McBride
             </span>
           </div>
 
