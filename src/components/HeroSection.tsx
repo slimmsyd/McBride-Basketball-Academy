@@ -4,7 +4,6 @@ const heroImages = [
   { src: "/assets/hero-1.jpg", alt: "Issac McBride - March Madness tunnel walk" },
   { src: "/assets/hero-2.jpg", alt: "Issac McBride - #10 jersey portrait with basketball" },
   { src: "/assets/hero-3.jpg", alt: "Issac McBride - Oral Roberts seated with basketball" },
-  { src: "/assets/hero-4.webp", alt: "Issac McBride - National Player of the Week" },
 ];
 
 const mobileHeroImage = {
@@ -26,7 +25,7 @@ export default function HeroSection() {
         />
       </div>
       {/* Desktop 4-column gallery */}
-      <div className="absolute inset-0 hidden md:grid md:grid-cols-4 gap-0">
+      <div className="absolute inset-0 hidden md:grid md:grid-cols-3 gap-0">
         {heroImages.map((img) => (
           <div key={img.src} className="relative overflow-hidden">
             <Image
